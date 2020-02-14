@@ -16,24 +16,50 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import javax.ws.rs.FormParam;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 
+import org.springframework.data.annotation.Transient;
+
+@XmlRootElement // declares entity to be transformed to XML/JSON
 @Entity // declares class as Entity, to be managed by JPA
 @Table(name="JPA_Employees") // declare table name associated with this class
 @EntityListeners({EmployeeListener.class}) // call the appropriate listener event method on lifecycle event.
 // Curly brackets are initialising an array
+@NamedQueries({
+	@NamedQuery(name="Employee.findBySalary", // declare query name as method in DAO 
+			query="select e from Employee e where e.salary between :minSalary and :maxSalary")
+			// identify query to fetch employee objects with properties and parameters
+			// all parameters are to be declared using @Param("<name>") in the DAO interface
+	,
+	@NamedQuery(name="Employee.findByDesignation",
+			query="select e from Employee e where e.designation=:designation")
+			// identify that the method in DAO and pass necessary parameters
+})
 public class Employee {
 	
 	int empno;
+	
+	@FormParam("name")
 	String name;
+	
+	@FormParam("salary")
 	double salary;
+	
+	@FormParam("designation")
 	Designation designation;
 	
 	Department currentDepartment;
 	
 	
-	@ManyToOne // One employee is associated with one of many departments
+	@ManyToOne // Many employees are associated with one department
 	@JoinColumn(name="fk_department_number") // foreign key column to store the associate deptno
+	@Transient // ignore this property when storing employee data in mongodb
+	@XmlTransient // ignore association property when shared via service
 	public Department getCurrentDepartment() {
 		return currentDepartment;
 	}
@@ -42,7 +68,9 @@ public class Employee {
 		this.currentDepartment = currentDepartment;
 	}
 	
+	
 	Set<Project> projectsAssigned = new HashSet<>();
+	
 	
 	@ManyToMany(cascade=CascadeType.ALL) // configure many to many associations for entities
 	@JoinTable(
@@ -50,6 +78,8 @@ public class Employee {
 			joinColumns = {@JoinColumn(name="fk_empno")}, // fk column for current class
 			inverseJoinColumns = {@JoinColumn(name="fk_projectId")} // fk column for collection
 			)
+	@Transient // ignore this property when storing employee data in mongodb
+	@XmlTransient // ignore the association property when shared via Service
 	public Set<Project> getProjectsAssigned() {
 		return projectsAssigned;
 	}

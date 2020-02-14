@@ -10,19 +10,26 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
+import javax.ws.rs.FormParam;
+import javax.xml.bind.annotation.XmlTransient;
 
 @Entity // declares class as Entity, to be managed by JPA
 @Table(name="JPA_Projects")
 public class Project {
 	
 	int projectId;
+	
+	@FormParam("name")
 	String name;
+	
+	@FormParam("customerName")
 	String customerName;
 	
 	Set<Employee> projectTeam = new HashSet<>();
 	
 	// provide property in Employee with @ManyToMany and @JoinTable configuration
 	@ManyToMany(mappedBy="projectsAssigned")
+	@XmlTransient
 	public Set<Employee> getProjectTeam() {
 		return projectTeam;
 	}
