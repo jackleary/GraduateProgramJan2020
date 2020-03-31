@@ -1,5 +1,8 @@
 package com.mastek.hrapp.services;
 
+import java.util.List;
+import java.util.Set;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.transaction.Transactional;
@@ -22,50 +25,50 @@ import com.mastek.hrapp.entities.JobPositions;
 import com.mastek.hrapp.entities.Project;
 
 @Component // marking class as bean to be created
-@Scope("singleton") // singleton: One object used across test cases, prototype: one object per request
-public class EmployeeService implements EmployeeAPI, DepartmentAPI, ProjectAPI{
-	
+@Scope("singleton") // singleton: One object used across test cases, prototype: one object per
+					// request
+public class EmployeeService implements EmployeeAPI, DepartmentAPI, ProjectAPI {
+
 	String exampleProperty;
-	
+
 	// declare all the entity DAOs to perform operation across multiple entities
 	@Autowired
 	EmployeeJPADAO empDAO;
-	
+
 	@Autowired
 	DepartmentJPADAO depDAO;
-	
+
 	@Autowired
 	ProjectJPADAO projDAO;
-	
+
 	@Autowired
 	JobPositionsDAO jobDAO;
-	
+
 	public EmployeeService() {
 		System.out.println("Employee service created");
 	}
-	
-	
+
 	@PostConstruct // initialisation method of the class
 	public void initializeService() {
 		System.out.println("Employee service initialized");
 	}
-	
+
 	@PreDestroy // calls before shutting down the application
 	public void terminateService() {
 		System.out.println("Employee service terminated");
 	}
-	
+
 	public void exampleMethod() {
-		System.out.println("Connect to "+getExampleProperty()+" for business data");
+		System.out.println("Connect to " + getExampleProperty() + " for business data");
 	}
 
 	public String getExampleProperty() {
 		return exampleProperty;
 	}
 
-	@Value("Spring example data source") // initialise property with the value 
+	@Value("Spring example data source") // initialise property with the value
 	public void setExampleProperty(String exampleProperty) {
-		System.out.println("Example property set: "+exampleProperty);
+		System.out.println("Example property set: " + exampleProperty);
 		this.exampleProperty = exampleProperty;
 	}
 
@@ -73,15 +76,15 @@ public class EmployeeService implements EmployeeAPI, DepartmentAPI, ProjectAPI{
 	public Employee assignEmployeeToDepartment(int empno, int depno) {
 		Employee emp = empDAO.findById(empno).get();
 		Department dep = depDAO.findById(depno).get(); // fetch numbers if they exist
-		
+
 		// assign association between employee and department
 		emp.setCurrentDepartment(dep); // assign department to employee
 		dep.getTeam().add(emp); // add employee in the department team
-		
+
 		// save changes in database
 		empDAO.save(emp);
 		depDAO.save(dep);
-		
+
 		return emp; // return result
 	}
 
@@ -89,25 +92,24 @@ public class EmployeeService implements EmployeeAPI, DepartmentAPI, ProjectAPI{
 	public Employee assignEmployeeToProject(int empno, int projId) {
 		Employee emp = empDAO.findById(empno).get(); // get employee object
 		Project newProject = projDAO.findById(projId).get(); // get project object
-		
+
 		emp.getProjectsAssigned().add(newProject); // assign employee to project
 		empDAO.save(emp); // save employee object
-		
+
 		return emp; // return employee object
 	}
-	
+
 	@Transactional
 	public JobPositions applyForJobPosition(int jobId, int empno) {
 		JobPositions job = jobDAO.findById(jobId).get();
 		Employee emp = empDAO.findById(empno).get();
-		
+
 		// adding employee object in applicants collection
 		job.getApplicants().add(emp);
-		
+
 		job = jobDAO.save(job);
 		return job;
 	}
-
 
 	@Override
 	public Iterable<Employee> listAllEmployees() {
@@ -115,12 +117,10 @@ public class EmployeeService implements EmployeeAPI, DepartmentAPI, ProjectAPI{
 		return empDAO.findAll();
 	}
 
-
 	@Override
 	public Employee findByEmpno(int empno) {
 		return empDAO.findById(empno).get();
 	}
-
 
 	@Override
 	public Employee registerNewEmployee(Employee newEmployee) {
@@ -128,19 +128,16 @@ public class EmployeeService implements EmployeeAPI, DepartmentAPI, ProjectAPI{
 		return newEmployee;
 	}
 
-
 	@Override
 	public Iterable<Project> listAllProjects() {
 		System.out.println("Listing all projects");
 		return projDAO.findAll();
 	}
 
-
 	@Override
 	public Project findByProjectId(int projectId) {
 		return projDAO.findById(projectId).get();
 	}
-
 
 	@Override
 	public Project registerNewProject(Project newProject) {
@@ -148,24 +145,39 @@ public class EmployeeService implements EmployeeAPI, DepartmentAPI, ProjectAPI{
 		return newProject;
 	}
 
-
 	@Override
 	public Iterable<Department> listAllDepartments() {
 		System.out.println("Listing all departments");
 		return depDAO.findAll();
 	}
 
-
 	@Override
 	public Department findByDepno(int deptno) {
 		return depDAO.findById(deptno).get();
 	}
 
-
 	@Override
 	public Department registerNewDepartment(Department newDepartment) {
 		newDepartment = depDAO.save(newDepartment);
 		return newDepartment;
+	}
+
+	@Override
+	@Transactional // to fetch all collections
+	public Set<Project> getEmployeeProjects(int empno) {
+		Employee currentEmp = empDAO.findById(empno).get();
+		int count = currentEmp.getProjectsAssigned().size();
+		System.out.println(count + " Projects Found");
+		Set<Project> projects = currentEmp.getProjectsAssigned();
+		return projects;
+	}
+
+	@Override
+	@Transactional
+	public Project registerProjectForEmployee(int empno, Project newProject) {
+		newProject = projDAO.save(newProject);
+		assignEmployeeToProject(empno, newProject.getProjectId());
+		return newProject;
 	}
 
 }
